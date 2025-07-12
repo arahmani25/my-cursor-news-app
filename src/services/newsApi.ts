@@ -13,6 +13,9 @@ console.log('API Key Status:', {
 
 const BASE_URL = 'https://newsapi.org/v2';
 
+// CORS proxy to bypass browser restrictions
+const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+
 // Mock data for development/testing
 const MOCK_ARTICLES = [
   {
@@ -56,17 +59,11 @@ const newsApi = axios.create({
 
 export const searchNews = async (query: string, page: number = 1, filters?: SearchFilters): Promise<NewsApiResponse> => {
   try {
-    // Check if API key is available
-    if (!API_KEY || API_KEY === '223fe5e8f44845d5bb0250dd3f548979') {
-      console.warn('Using fallback API key. Please set REACT_APP_NEWS_API_KEY environment variable.');
-    }
-    
+    // Use our backend proxy to avoid CORS issues
     const params: any = {
-      q: query,
+      query,
       page,
       pageSize: filters?.pageSize || 20,
-      sortBy: filters?.sortBy || 'publishedAt',
-      language: filters?.language || 'en',
     };
 
     // Add date filters if provided
@@ -77,7 +74,7 @@ export const searchNews = async (query: string, page: number = 1, filters?: Sear
       params.to = filters.dateTo;
     }
 
-    const response = await newsApi.get('/everything', { params });
+    const response = await axios.get('/api/news', { params });
     return response.data;
   } catch (error: any) {
     console.error('Error fetching news:', error);
@@ -117,16 +114,12 @@ export const searchNews = async (query: string, page: number = 1, filters?: Sear
 
 export const getTopHeadlines = async (): Promise<NewsApiResponse> => {
   try {
-    // Check if API key is available
-    if (!API_KEY || API_KEY === '223fe5e8f44845d5bb0250dd3f548979') {
-      console.warn('Using fallback API key. Please set REACT_APP_NEWS_API_KEY environment variable.');
-    }
-    
-    const response = await newsApi.get('/top-headlines', {
+    // Use our backend proxy to avoid CORS issues
+    const response = await axios.get('/api/news', {
       params: {
-        country: 'us',
         pageSize: 20,
-      },
+        country: 'us'
+      }
     });
     return response.data;
   } catch (error: any) {
