@@ -3,6 +3,13 @@ import { NewsApiResponse, Article } from '../types';
 import { SearchFilters } from '../types/search';
 
 const API_KEY = process.env.REACT_APP_NEWS_API_KEY || '223fe5e8f44845d5bb0250dd3f548979'; // Use environment variable or fallback
+
+// Debug: Log the API key status (remove this in production)
+console.log('API Key Status:', {
+  hasEnvVar: !!process.env.REACT_APP_NEWS_API_KEY,
+  isUsingFallback: !process.env.REACT_APP_NEWS_API_KEY,
+  keyLength: API_KEY.length
+});
 const BASE_URL = 'https://newsapi.org/v2';
 
 const newsApi = axios.create({
