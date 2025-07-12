@@ -1,9 +1,11 @@
 {
   "short_name": "News App",
   "name": "News App - Stay Updated",
+  "description": "Stay updated with the latest news from around the world",
   "icons": [],
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "background_color": "#ffffff",
+  "scope": "/"
 } 
