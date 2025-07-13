@@ -48,7 +48,7 @@ export const registerUserWithFirebase = async (email: string, password: string, 
       email: user.email || '',
       name,
       savedArticles: [],
-      role: 'user',
+      role: email === 'admin@newsapp.com' ? 'admin' : 'user', // Make admin@newsapp.com an admin
       isActive: true,
       createdAt: new Date().toISOString(),
       lastLogin: new Date().toISOString()

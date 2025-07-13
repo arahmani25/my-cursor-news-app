@@ -16,11 +16,11 @@ interface WelcomeEmailData extends Record<string, unknown> {
 }
 
 // EmailJS configuration
-// Replace these with your actual EmailJS credentials
-const EMAILJS_SERVICE_ID = 'service_2u8d39s'; // e.g., 'service_abc123'
-const EMAILJS_TEMPLATE_ID = 'template_zyxc7dj'; // e.g., 'template_xyz789'
-const EMAILJS_WELCOME_TEMPLATE_ID = 'template_dbfh5hx'; // Replace with your welcome template ID
-const EMAILJS_USER_ID = 'EN-JTkX7Rw0oDM-K_'; // e.g., 'user_def456'
+// Use environment variables for EmailJS credentials
+const EMAILJS_SERVICE_ID = process.env.REACT_APP_EMAILJS_SERVICE_ID || '';
+const EMAILJS_TEMPLATE_ID = process.env.REACT_APP_EMAILJS_TEMPLATE_ID || '';
+const EMAILJS_WELCOME_TEMPLATE_ID = process.env.REACT_APP_EMAILJS_WELCOME_TEMPLATE_ID || '';
+const EMAILJS_USER_ID = process.env.REACT_APP_EMAILJS_PUBLIC_KEY || '';
 
 // Generate a secure reset token
 export const generateResetToken = (): string => {
