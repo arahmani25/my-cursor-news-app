@@ -87,8 +87,13 @@ export const registerUserWithFirebase = async (email: string, password: string, 
 
     console.log('🔄 Updating display name...');
     // Update display name
-    await updateProfile(user, { displayName: name });
-    console.log('✅ Display name updated');
+    try {
+      await updateProfile(user, { displayName: name });
+      console.log('✅ Display name updated');
+    } catch (profileError) {
+      console.warn('⚠️ Failed to update display name:', profileError);
+      // Don't fail registration if display name update fails
+    }
 
     // Create user document in Firestore
     const userData: User = {
@@ -103,8 +108,14 @@ export const registerUserWithFirebase = async (email: string, password: string, 
     };
 
     console.log('🔄 Saving user data to Firestore...');
-    await setDoc(doc(db, 'users', user.uid), userData);
-    console.log('✅ User data saved to Firestore');
+    try {
+      await setDoc(doc(db, 'users', user.uid), userData);
+      console.log('✅ User data saved to Firestore');
+    } catch (firestoreError) {
+      console.error('❌ Failed to save user data to Firestore:', firestoreError);
+      console.log('⚠️ Continuing with registration despite Firestore error');
+      // Don't fail registration if Firestore is unavailable
+    }
 
     return userData;
   } catch (error: any) {
@@ -112,7 +123,10 @@ export const registerUserWithFirebase = async (email: string, password: string, 
     if (error.code === 'auth/email-already-in-use') {
       throw new Error('Email already registered');
     }
-    throw new Error(error.message);
+    if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection.');
+    }
+    throw new Error(error.message || 'Registration failed. Please try again.');
   }
 };
 
@@ -123,34 +137,78 @@ export const loginUserWithFirebase = async (email: string, password: string): Pr
       throw new Error('Firebase not initialized. Please check your environment variables.');
     }
 
+    console.log('🔄 Attempting to sign in with Firebase Auth...');
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('✅ Firebase Auth sign in successful:', user.uid);
 
     // Get user data from Firestore
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    
-    if (!userDoc.exists()) {
-      throw new Error('User data not found');
+    try {
+      console.log('🔄 Attempting to get user data from Firestore...');
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      
+      if (!userDoc.exists()) {
+        console.warn('⚠️ User document not found in Firestore, creating fallback data');
+        // Create fallback user data
+        const userData: User = {
+          id: user.uid,
+          email: user.email || '',
+          name: user.displayName || '',
+          savedArticles: [],
+          role: 'user',
+          isActive: true,
+          createdAt: user.metadata.creationTime || new Date().toISOString(),
+          lastLogin: new Date().toISOString()
+        };
+        console.log('✅ Using fallback user data for login:', userData);
+        return userData;
+      }
+
+      const userData = userDoc.data() as User;
+      console.log('✅ User data loaded from Firestore:', userData);
+
+      // Check if user is active
+      if (!userData.isActive) {
+        throw new Error('Account is deactivated. Please contact administrator.');
+      }
+
+      // Update last login (non-blocking)
+      try {
+        await updateDoc(doc(db, 'users', user.uid), {
+          lastLogin: new Date().toISOString()
+        });
+        console.log('✅ Last login updated in Firestore');
+      } catch (updateError) {
+        console.warn('⚠️ Failed to update last login in Firestore:', updateError);
+        // Don't fail the login if this update fails
+      }
+
+      return userData;
+    } catch (firestoreError) {
+      console.error('❌ Firestore error during login:', firestoreError);
+      // Create fallback user data if Firestore is unavailable
+      const userData: User = {
+        id: user.uid,
+        email: user.email || '',
+        name: user.displayName || '',
+        savedArticles: [],
+        role: 'user',
+        isActive: true,
+        createdAt: user.metadata.creationTime || new Date().toISOString(),
+        lastLogin: new Date().toISOString()
+      };
+      console.log('✅ Using fallback user data due to Firestore error:', userData);
+      return userData;
     }
-
-    const userData = userDoc.data() as User;
-
-    // Check if user is active
-    if (!userData.isActive) {
-      throw new Error('Account is deactivated. Please contact administrator.');
-    }
-
-    // Update last login
-    await updateDoc(doc(db, 'users', user.uid), {
-      lastLogin: new Date().toISOString()
-    });
-
-    return userData;
   } catch (error: any) {
+    console.error('❌ Login error:', error);
     if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
       throw new Error('Invalid email or password');
     }
-    throw new Error(error.message);
+    if (error.code === 'auth/network-request-failed') {
+      throw new Error('Network error. Please check your internet connection.');
+    }
+    throw new Error(error.message || 'Login failed. Please try again.');
   }
 };
 

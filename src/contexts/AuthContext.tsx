@@ -42,9 +42,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           if (!db) {
             console.error('❌ Firestore not initialized');
-            const userData = getCurrentUser();
+            // Fallback: create user data from Firebase auth user
+            const userData = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || '',
+              savedArticles: [],
+              role: 'user',
+              isActive: true,
+              createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+              lastLogin: new Date().toISOString()
+            };
+            console.log('✅ Using fallback user data:', userData);
             setUser(userData);
             setIsAuthenticated(true);
+            setLoading(false);
             return;
           }
           
@@ -56,13 +68,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             setIsAuthenticated(true);
           } else {
             console.warn('⚠️ User document not found in Firestore');
-            const userData = getCurrentUser();
+            // Fallback: create user data from Firebase auth user
+            const userData = {
+              id: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              name: firebaseUser.displayName || '',
+              savedArticles: [],
+              role: 'user',
+              isActive: true,
+              createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+              lastLogin: new Date().toISOString()
+            };
+            console.log('✅ Using fallback user data:', userData);
             setUser(userData);
             setIsAuthenticated(true);
           }
         } catch (error) {
           console.error('❌ Error loading user data:', error);
-          const userData = getCurrentUser();
+          // Fallback: create user data from Firebase auth user
+          const userData = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || '',
+            name: firebaseUser.displayName || '',
+            savedArticles: [],
+            role: 'user',
+            isActive: true,
+            createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
+            lastLogin: new Date().toISOString()
+          };
+          console.log('✅ Using fallback user data after error:', userData);
           setUser(userData);
           setIsAuthenticated(true);
         }
@@ -75,10 +109,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     });
 
-    // If Firebase auth is not initialized, set loading to false
+    // If Firebase auth is not initialized, set loading to false immediately
     if (!auth) {
       console.warn('⚠️ Firebase auth not initialized - skipping auth state listener');
       setLoading(false);
+      setIsAuthenticated(false);
     }
 
     return () => {
