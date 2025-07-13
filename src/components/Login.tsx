@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,8 +8,15 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const { login, isAuthenticated, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      setError('');
+      navigate('/');
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,13 +25,17 @@ const Login: React.FC = () => {
 
     try {
       await login(email, password);
-      navigate('/');
+      // navigation will be handled by useEffect
     } catch (err) {
       setError('Failed to login. Please check your credentials.');
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading) {
+    return <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '60vh' }}><LoadingSpinner size="large" /></div>;
+  }
 
   return (
     <div className="auth-container">
