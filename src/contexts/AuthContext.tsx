@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { AuthContextType, User, Article } from '../types';
 import { 
-  loginUser, 
-  registerUser, 
-  resetPassword, 
-  checkEmailExists,
-  getUserById,
-  updateUserProfile as updateProfile,
-  changeUserPassword as changePasswordService
-} from '../services/authService';
+  auth,
+  registerUserWithFirebase,
+  loginUserWithFirebase,
+  getCurrentUser,
+  updateUserProfileInFirebase,
+  getAllUsersFromFirebase
+} from '../services/firebase';
 import { sendWelcomeEmail } from '../services/emailService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,22 +30,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user data on app load
-    const storedUser = localStorage.getItem('currentUser');
-    if (storedUser) {
-      const userData = JSON.parse(storedUser);
-      setUser(userData);
-      setIsAuthenticated(true);
-    }
-    setLoading(false);
+    // Listen for Firebase auth state changes
+    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in
+        const userData = getCurrentUser();
+        setUser(userData);
+        setIsAuthenticated(true);
+      } else {
+        // User is signed out
+        setUser(null);
+        setIsAuthenticated(false);
+      }
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
-      const userData = await loginUser(email, password);
-      setUser(userData);
-      setIsAuthenticated(true);
-      localStorage.setItem('currentUser', JSON.stringify(userData));
+      const userData = await loginUserWithFirebase(email, password);
+      // Firebase auth state change will handle the rest
     } catch (error) {
       throw error;
     }
@@ -54,10 +59,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, name: string) => {
     try {
-      const userData = await registerUser(email, password, name);
-      setUser(userData);
-      setIsAuthenticated(true);
-      localStorage.setItem('currentUser', JSON.stringify(userData));
+      const userData = await registerUserWithFirebase(email, password, name);
       
       // Send welcome email (non-blocking)
       try {
@@ -72,9 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem('currentUser');
+    auth.signOut();
   };
 
   const saveArticle = (article: Article) => {
@@ -103,11 +103,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const forgotPassword = async (email: string) => {
     try {
-      const emailExists = await checkEmailExists(email);
-      if (!emailExists) {
-        throw new Error('Email not found in our system');
-      }
-      // In a real app, this would send an email
+      // Firebase will handle password reset
+      // For now, just return true - you can implement Firebase password reset later
       return true;
     } catch (error) {
       throw error;
@@ -116,7 +113,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetUserPassword = async (email: string, newPassword: string) => {
     try {
-      await resetPassword(email, newPassword);
+      // Firebase password reset would go here
+      // For now, just throw an error
+      throw new Error('Password reset not implemented yet');
     } catch (error) {
       throw error;
     }
@@ -128,9 +127,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('User not logged in');
       }
 
-      const updatedUser = await updateProfile(user.id, name, email);
+      const updatedUser = await updateUserProfileInFirebase(user.id, name, email);
       setUser(updatedUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedUser));
     } catch (error) {
       throw error;
     }
@@ -142,7 +140,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('User not logged in');
       }
 
-      await changePasswordService(user.email, currentPassword, newPassword);
+      // Firebase password change would go here
+      throw new Error('Password change not implemented yet');
     } catch (error) {
       throw error;
     }
