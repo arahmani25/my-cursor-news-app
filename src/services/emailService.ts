@@ -301,18 +301,13 @@ export const sendWelcomeEmail = async (email: string, name: string): Promise<str
         console.log('✅ Welcome email sent successfully:', result);
         return 'Welcome email sent successfully!';
       } catch (emailError: any) {
-        console.error('❌ Welcome EmailJS error details:', emailError);
-        console.error('❌ Error message:', emailError.message);
-        console.error('❌ Error code:', emailError.code);
-        console.error('❌ Error text:', emailError.text);
-        
-        // Check for specific EmailJS errors
-        if (emailError.text) {
-          console.error('❌ EmailJS error text:', emailError.text);
+        console.error('❌ Welcome EmailJS error:', emailError);
+        if (typeof emailError === 'object' && emailError !== null) {
+          for (const [key, value] of Object.entries(emailError)) {
+            console.error(`EmailJS error detail: ${key}:`, value);
+          }
         }
-        
-        console.warn('📧 Welcome email failed, but registration continues');
-        return 'Welcome email failed, but registration successful';
+        throw emailError;
       }
     } else {
       console.log('⚠️ Welcome email not configured, skipping welcome email');

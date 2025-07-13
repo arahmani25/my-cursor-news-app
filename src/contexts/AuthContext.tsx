@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email: firebaseUser.email || '',
               name: firebaseUser.displayName || '',
               savedArticles: [],
-              role: 'user',
+              role: "user",
               isActive: true,
               createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
               lastLogin: new Date().toISOString()
@@ -74,7 +74,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email: firebaseUser.email || '',
               name: firebaseUser.displayName || '',
               savedArticles: [],
-              role: 'user',
+              role: "user",
               isActive: true,
               createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
               lastLogin: new Date().toISOString()
@@ -91,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             email: firebaseUser.email || '',
             name: firebaseUser.displayName || '',
             savedArticles: [],
-            role: 'user',
+            role: "user",
             isActive: true,
             createdAt: firebaseUser.metadata.creationTime || new Date().toISOString(),
             lastLogin: new Date().toISOString()
