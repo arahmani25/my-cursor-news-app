@@ -155,7 +155,7 @@ export const loginUserWithFirebase = async (email: string, password: string): Pr
           email: user.email || '',
           name: user.displayName || '',
           savedArticles: [],
-          role: 'user',
+          role: "user" as 'user',
           isActive: true,
           createdAt: user.metadata.creationTime || new Date().toISOString(),
           lastLogin: new Date().toISOString()
@@ -192,7 +192,7 @@ export const loginUserWithFirebase = async (email: string, password: string): Pr
         email: user.email || '',
         name: user.displayName || '',
         savedArticles: [],
-        role: 'user',
+        role: "user" as 'user',
         isActive: true,
         createdAt: user.metadata.creationTime || new Date().toISOString(),
         lastLogin: new Date().toISOString()
