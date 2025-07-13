@@ -6,8 +6,10 @@ import {
   loginUserWithFirebase,
   getCurrentUser,
   updateUserProfileInFirebase,
-  getAllUsersFromFirebase
+  getAllUsersFromFirebase,
+  db
 } from '../services/firebase';
+import { getDoc, doc } from 'firebase/firestore';
 import { sendWelcomeEmail } from '../services/emailService';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -31,14 +33,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Listen for Firebase auth state changes
-    const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in
-        const userData = getCurrentUser();
-        setUser(userData);
-        setIsAuthenticated(true);
+        console.log('🔄 Firebase auth state changed - user signed in:', firebaseUser.uid);
+        
+        // Get user data from Firestore
+        try {
+          const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+          if (userDoc.exists()) {
+            const userData = userDoc.data() as User;
+            console.log('✅ User data loaded from Firestore:', userData);
+            setUser(userData);
+            setIsAuthenticated(true);
+          } else {
+            console.warn('⚠️ User document not found in Firestore');
+            const userData = getCurrentUser();
+            setUser(userData);
+            setIsAuthenticated(true);
+          }
+        } catch (error) {
+          console.error('❌ Error loading user data:', error);
+          const userData = getCurrentUser();
+          setUser(userData);
+          setIsAuthenticated(true);
+        }
       } else {
         // User is signed out
+        console.log('🔄 Firebase auth state changed - user signed out');
         setUser(null);
         setIsAuthenticated(false);
       }
@@ -59,16 +81,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (email: string, password: string, name: string) => {
     try {
+      console.log('🔄 Starting registration process...');
       const userData = await registerUserWithFirebase(email, password, name);
+      console.log('✅ User registered successfully:', userData);
       
       // Send welcome email (non-blocking)
       try {
-        await sendWelcomeEmail(email, name);
-        console.log('✅ Welcome email sent successfully');
+        console.log('📧 Attempting to send welcome email...');
+        const emailResult = await sendWelcomeEmail(email, name);
+        console.log('✅ Welcome email result:', emailResult);
       } catch (welcomeError) {
         console.warn('⚠️ Welcome email failed, but registration was successful:', welcomeError);
       }
     } catch (error) {
+      console.error('❌ Registration failed:', error);
       throw error;
     }
   };

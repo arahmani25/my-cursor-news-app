@@ -35,12 +35,16 @@ const convertFirebaseUser = (firebaseUser: FirebaseUser): User => {
 // Register new user
 export const registerUserWithFirebase = async (email: string, password: string, name: string): Promise<User> => {
   try {
+    console.log('🔄 Creating user in Firebase Auth...');
     // Create user in Firebase Auth
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
+    console.log('✅ User created in Firebase Auth:', user.uid);
 
+    console.log('🔄 Updating display name...');
     // Update display name
     await updateProfile(user, { displayName: name });
+    console.log('✅ Display name updated');
 
     // Create user document in Firestore
     const userData: User = {
@@ -54,10 +58,13 @@ export const registerUserWithFirebase = async (email: string, password: string, 
       lastLogin: new Date().toISOString()
     };
 
+    console.log('🔄 Saving user data to Firestore...');
     await setDoc(doc(db, 'users', user.uid), userData);
+    console.log('✅ User data saved to Firestore');
 
     return userData;
   } catch (error: any) {
+    console.error('❌ Registration error:', error);
     if (error.code === 'auth/email-already-in-use') {
       throw new Error('Email already registered');
     }
