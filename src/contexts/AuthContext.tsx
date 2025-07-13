@@ -33,13 +33,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     // Listen for Firebase auth state changes
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+    const unsubscribe = auth?.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         // User is signed in
         console.log('🔄 Firebase auth state changed - user signed in:', firebaseUser.uid);
         
         // Get user data from Firestore
         try {
+          if (!db) {
+            console.error('❌ Firestore not initialized');
+            const userData = getCurrentUser();
+            setUser(userData);
+            setIsAuthenticated(true);
+            return;
+          }
+          
           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
           if (userDoc.exists()) {
             const userData = userDoc.data() as User;
@@ -67,7 +75,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    // If Firebase auth is not initialized, set loading to false
+    if (!auth) {
+      console.warn('⚠️ Firebase auth not initialized - skipping auth state listener');
+      setLoading(false);
+    }
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -100,7 +118,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    auth.signOut();
+    if (auth) {
+      auth.signOut();
+    } else {
+      console.warn('⚠️ Firebase auth not initialized - cannot sign out');
+    }
   };
 
   const saveArticle = (article: Article) => {
